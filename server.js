@@ -64,4 +64,20 @@ http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
   if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
   if (req.method === 'GET' && req.url === '/') { res.writeHead(200); return res.end('Qimah Runner OK'); }
-  if (req.method === 'POST' && req.url === '/run') 
+  if (req.method === 'POST' && req.url === '/run') {
+    let body = '';
+    req.on('data', d => { body += d; if (body.length > 200000) req.destroy(); });
+    req.on('end', async () => {
+      try {
+        const result = await runCode(JSON.parse(body));
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(result));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'error', error: 'طلب غير صالح' }));
+      }
+    });
+    return;
+  }
+  res.writeHead(404); res.end();
+}).listen(PORT, () => console.log('Qimah Runner on :' + PORT));
